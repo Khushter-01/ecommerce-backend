@@ -16,7 +16,7 @@ const createRazorpayOrder = async (req, res, next) => {
       if (!product || !product.isActive) {
         return res.status(400).json({ success: false, message: `Product "${item.name}" is unavailable` });
       }
-      if (product.stock < item.quantity) {
+      if (product.stock < item.qty) {
         return res.status(400).json({ success: false, message: `Insufficient stock for "${item.name}"` });
       }
     }
@@ -85,7 +85,7 @@ const verifyPayment = async (req, res, next) => {
 
     // Decrease stock
     for (const item of order.orderItems) {
-      await Product.findByIdAndUpdate(item.product, { $inc: { stock: -item.quantity } });
+      await Product.findByIdAndUpdate(item.product, { $inc: { stock: -item.qty } });
     }
 
     await order.save();
