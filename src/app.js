@@ -16,10 +16,16 @@ const adminRoutes = require("./routes/adminRoutes");
 const app = express();
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
-app.use(cors({
-  origin: ["http://localhost:8080", "http://localhost:8081"],
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: [
+      "http://localhost:8080",
+      "http://localhost:8081",
+      "https://ecommerce-user-frontend-ten.vercel.app",
+    ],
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(passport.initialize());
@@ -35,7 +41,9 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/admin", adminRoutes);
 
 // Health check
-app.get("/api/health", (req, res) => res.json({ success: true, message: "Server is running 🚀" }));
+app.get("/api/health", (req, res) =>
+  res.json({ success: true, message: "Server is running 🚀" }),
+);
 
 // ─── Error Handling ───────────────────────────────────────────────────────────
 app.use(notFound);
