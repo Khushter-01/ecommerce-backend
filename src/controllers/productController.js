@@ -90,7 +90,7 @@ const createProduct = async (req, res, next) => {
     // If files uploaded (override)
     if (req.files && req.files.length > 0) {
       images = req.files.map((file) => ({
-        url: `/uploads/${file.filename}`,
+        url: file.path, // cloudinary url
         alt: name,
       }));
     }
@@ -128,7 +128,7 @@ const updateProduct = async (req, res, next) => {
     const updates = req.body;
     if (req.files && req.files.length > 0) {
       updates.images = req.files.map((f) => ({
-        url: `/uploads/${f.filename}`,
+        url: f.path, // cloudinary url
         alt: updates.name || product.name,
       }));
     }

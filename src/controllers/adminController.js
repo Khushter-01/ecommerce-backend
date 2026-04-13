@@ -147,7 +147,7 @@ const getTopProducts = async (req, res) => {
       {
         $group: {
           _id: "$orderItems.product",
-          totalSold: { $sum: "$orderItems.qty" },
+          totalSold: { $sum: "$orderItems.quantity" },
         },
       },
       { $sort: { totalSold: -1 } },
