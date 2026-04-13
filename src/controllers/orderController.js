@@ -179,10 +179,60 @@ const getOrder = async (req, res, next) => {
 
 // Admin APIs unchanged
 const getAllOrders = async (req, res, next) => {
-  /* same */
+  try {
+    const { page = 1, limit = 20, status } = req.query;
+
+    const query = {};
+    if (status) query.orderStatus = status;
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const total = await Order.countDocuments(query);
+
+    const orders = await Order.find(query)
+      .populate("user", "name email")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit));
+
+    res.json({
+      success: true,
+      orders,
+      pages: Math.ceil(total / limit),
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 const updateOrderStatus = async (req, res, next) => {
-  /* same */
+  try {
+    const { status } = req.body;
+
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    order.orderStatus = status;
+
+    if (status === "delivered") {
+      order.deliveredAt = new Date();
+    }
+
+    await order.save();
+
+    res.json({
+      success: true,
+      message: "Order status updated",
+      order,
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 module.exports = {
