@@ -10,7 +10,9 @@ const register = async (req, res, next) => {
 
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
-      return res.status(400).json({ success: false, message: "Email already registered" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Email already registered" });
     }
 
     const user = await User.create({ name, email, password, phone });
@@ -39,10 +41,15 @@ const login = (req, res, next) => {
   passport.authenticate("local", { session: false }, (err, user, info) => {
     if (err) return next(err);
     if (!user) {
-      return res.status(401).json({ success: false, message: info?.message || "Invalid credentials" });
+      return res.status(401).json({
+        success: false,
+        message: info?.message || "Invalid credentials",
+      });
     }
     if (!user.isActive) {
-      return res.status(403).json({ success: false, message: "Account is deactivated" });
+      return res
+        .status(403)
+        .json({ success: false, message: "Account is deactivated" });
     }
 
     const token = generateToken(user._id);
@@ -75,7 +82,7 @@ const updateProfile = async (req, res, next) => {
     const user = await User.findByIdAndUpdate(
       req.user._id,
       { name, phone, addresses },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     ).select("-password");
 
     res.json({ success: true, message: "Profile updated", user });
@@ -94,7 +101,9 @@ const changePassword = async (req, res, next) => {
     const bcrypt = require("bcryptjs");
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) {
-      return res.status(400).json({ success: false, message: "Current password is incorrect" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Current password is incorrect" });
     }
 
     user.password = newPassword;
@@ -106,4 +115,67 @@ const changePassword = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login, getMe, updateProfile, changePassword };
+const crypto = require("crypto");
+
+const forgotPassword = async (req, res, next) => {
+  try {
+    const user = await User.findOne({ email: req.body.email });
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Email not found" });
+    }
+
+    const resetToken = crypto.randomBytes(20).toString("hex");
+
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 min
+
+    await user.save({ validateBeforeSave: false });
+
+    // TEMP (no email yet)
+    res.json({
+      success: true,
+      message: "Reset link generated",
+      resetUrl: `${process.env.CLIENT_URL}/reset-password/${resetToken}`,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const resetPassword = async (req, res, next) => {
+  try {
+    const user = await User.findOne({
+      resetPasswordToken: req.params.token,
+      resetPasswordExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid or expired token" });
+    }
+
+    user.password = req.body.password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+
+    await user.save();
+
+    res.json({ success: true, message: "Password reset successful" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = {
+  register,
+  login,
+  getMe,
+  updateProfile,
+  changePassword,
+  forgotPassword,
+  resetPassword,
+};
